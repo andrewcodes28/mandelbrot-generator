@@ -40,6 +40,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        font-family: sans-serif;
       }
 
       /* From https://stackoverflow.com/a/75882568 */
@@ -444,6 +445,17 @@
         return out
       }
 
+      function interpolate(num) {
+        if (num >= 1) return NOCOLOR
+
+        const eff = num * (COLORS.length - 1)
+        const idx = Math.trunc(eff)
+        const part = eff % 1
+        const color1 = COLORS[idx]
+        const color2 = COLORS[idx + 1]
+        return Array(3).fill().map((_, i) => color1[i] * (1 - part) + color2[i] * part)
+      }
+
       async function draw(eager, lazy) {
         const { density, minX, minY, maxX, maxY, maxIter, coloring, computeMode } = eager
         const { x, y, scale } = lazy
@@ -467,9 +479,11 @@
             const effX = i % density
             const effY = Math.floor(i / density)
             const result = results[i]
-            const color = coloring === 1 ? [0, 0, 0] : (result === maxIter ? NOCOLOR : 
+
+            const f = Math.min(result / maxIter, 1)
+            const color = coloring === 1 ? interpolate(f) : (result === maxIter ? NOCOLOR : 
               (coloring === 2 ? COLORS[result % COLORS.length] : [255, 255, 255]))
-            const alpha = 255 * (coloring === 1 ? 2 * result / maxIter - 1 : 1)
+
             const base = PREC * effX + PREC ** 2 * density * effY
             for (let x = 0; x < PREC; x++) {
               for (let y = 0; y < PREC; y++) {
@@ -477,7 +491,7 @@
                 data[coord * 4] = color[0];
 						    data[coord * 4 + 1] = color[1];
 						    data[coord * 4 + 2] = color[2];
-                data[coord * 4 + 3] = alpha;
+                data[coord * 4 + 3] = 255;
               }
             }
           }

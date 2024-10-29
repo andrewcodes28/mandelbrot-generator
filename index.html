@@ -277,8 +277,6 @@
       // Webworker that draws the mandelbrot set onto the screen
       const COLORS = [[255, 0, 0], [255, 165, 0], [255, 255, 0], [0, 128, 0], [0, 0, 255], [128, 0, 128]]
       const NOCOLOR = [0, 0, 0]
-      const START = [0, 0, 102]
-      const END = [212, 175, 55]
       const PREC = 2
 
       let canvas
@@ -447,6 +445,17 @@
         return out
       }
 
+      function interpolate(num) {
+        if (num >= 1) return NOCOLOR
+
+        const eff = num * (COLORS.length - 1)
+        const idx = Math.trunc(eff)
+        const part = eff % 1
+        const color1 = COLORS[idx]
+        const color2 = COLORS[idx + 1]
+        return Array(3).fill().map((_, i) => color1[i] * (1 - part) + color2[i] * part)
+      }
+
       async function draw(eager, lazy) {
         const { density, minX, minY, maxX, maxY, maxIter, coloring, computeMode } = eager
         const { x, y, scale } = lazy
@@ -472,11 +481,8 @@
             const result = results[i]
 
             const f = Math.min(result / maxIter, 1)
-            const scaled = result === maxIter ? NOCOLOR : Array(3).fill().map((_, i) => END[i] * f + START[i] * (1 - f))
-
-            const color = coloring === 1 ? scaled : (result === maxIter ? NOCOLOR : 
+            const color = coloring === 1 ? interpolate(f) : (result === maxIter ? NOCOLOR : 
               (coloring === 2 ? COLORS[result % COLORS.length] : [255, 255, 255]))
-            //const alpha = 255 * (coloring === 1 ? 1 - result / maxIter : 1)
 
             const base = PREC * effX + PREC ** 2 * density * effY
             for (let x = 0; x < PREC; x++) {
